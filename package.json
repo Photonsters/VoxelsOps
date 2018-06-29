@@ -1,0 +1,22 @@
+{
+  "name": "binary-voxel-filters",
+  "version": "1.0.0",
+  "description": "this library will process three-dimensional matrix of bonary data with boolean operations and some helper filters",
+  "main": "loader.js",
+  "scripts": {
+    "test": "test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Antharon/BinaryVoxelBooleanFilters.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Antharon/BinaryVoxelBooleanFilters/issues"
+  },
+  "homepage": "https://github.com/Antharon/BinaryVoxelBooleanFilters#readme",
+  "dependencies": {
+    "sjcl": "^1.0.7"
+  }
+}
