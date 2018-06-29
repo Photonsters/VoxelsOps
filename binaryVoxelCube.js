@@ -213,4 +213,34 @@ BinaryVoxelCube.prototype.flood = function(x,y,z,color){
   return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,ret);
 }
 
+BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cube
+  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY || bvc.sizeZ!==this.sizeZ){
+    return;
+  }
+  let combinedData=this.voxelData.copy().or(bvc.voxelData);
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
+}
+
+BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary voxel cube
+  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY || bvc.sizeZ!==this.sizeZ){
+    return;
+  }
+  let combinedData=this.voxelData.copy().and(bvc.voxelData);
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
+}
+
+BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary voxel cube
+  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY || bvc.sizeZ!==this.sizeZ){
+    return;
+  }
+  let combinedData=this.voxelData.copy();
+  let size=this.sizeX*this.sizeY*this.sizeZ;
+  for(let i=0;i<size;i++){
+    if(bvc.voxelData.get(i)){
+      combinedData.set(i,false);
+    }
+  }
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
+}
+
 module.exports = BinaryVoxelCube;
