@@ -31,6 +31,15 @@ BinaryVoxelCube.prototype.setVoxel = function(x,y,z,color){
   return this.voxelData.set(this.sizeX*this.sizeY*z+this.sizeX*y+x,color);
 }
 
+BinaryVoxelCube.prototype.getLayer = function(z){
+  sizeXY=this.sizeX*this.sizeY;
+  let ret=new bitArray(sizeXY);
+  for(let i=0;i<sizeXY;i++){
+    ret.set(i,this.voxelData.get((z-1)*sizeXY+i));
+  }
+  return ret;
+}
+
 BinaryVoxelCube.prototype.renderLayer = function(z,scale=1){
   let render='';
   for(let y=0;y<this.sizeY;y+=scale){
@@ -55,6 +64,10 @@ BinaryVoxelCube.prototype.countLayerVolume = function(z){
     }
   }
   return total;
+}
+
+BinaryVoxelCube.prototype.volume = function(){
+  return this.voxelData.count();
 }
 
 BinaryVoxelCube.prototype.floodOld = function(x,y,z,color,keepOldVoxel){
@@ -214,33 +227,115 @@ BinaryVoxelCube.prototype.flood = function(x,y,z,color){
 }
 
 BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cube
-  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY || bvc.sizeZ!==this.sizeZ){
-    return;
+  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
+    throw new Error('cubes have different profile!');
   }
-  let combinedData=this.voxelData.copy().or(bvc.voxelData);
-  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
+  let originalIsTaller=!!bvc.size<this.sizeZ;
+  let size=this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ;
+  let minSize=(originalIsTaller?bvc:this).sizeZ*this.sizeX*this.sizeY;
+  let combinedData=new bitArray(size);
+  for(let i=0;i<size;i++){
+    if(i<minSize){
+      combinedData.set(i,this.voxelData.get(i)||bvc.voxelData.get(i));
+    } else {
+      if(originalIsTaller){
+        combinedData.set(i,this.voxelData.get(i));
+      } else {
+        combinedData.set(i,bvc.voxelData.get(i));
+      }
+    }
+  }
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData);
 }
 
 BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary voxel cube
-  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY || bvc.sizeZ!==this.sizeZ){
-    return;
+  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
+    throw new Error('cubes have different profile!');
   }
-  let combinedData=this.voxelData.copy().and(bvc.voxelData);
-  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
-}
-
-BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary voxel cube
-  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY || bvc.sizeZ!==this.sizeZ){
-    return;
-  }
-  let combinedData=this.voxelData.copy();
-  let size=this.sizeX*this.sizeY*this.sizeZ;
+  let originalIsTaller=!!bvc.size<this.sizeZ;
+  let size=this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ;
+  let minSize=(originalIsTaller?bvc:this).sizeZ*this.sizeX*this.sizeY;
+  let combinedData=new bitArray(size);
   for(let i=0;i<size;i++){
-    if(bvc.voxelData.get(i)){
+    if(i<minSize){
+      combinedData.set(i,this.voxelData.get(i)&&bvc.voxelData.get(i));
+    } else {
       combinedData.set(i,false);
     }
   }
-  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData);
+}
+
+BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary voxel cube
+  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
+    throw new Error('cubes have different profile!');
+  }
+  let originalIsTaller=!!bvc.size<this.sizeZ;
+  let size=this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ;
+  let minSize=(originalIsTaller?bvc:this).sizeZ*this.sizeX*this.sizeY;
+  let combinedData=new bitArray(size);
+  for(let i=0;i<size;i++){
+    if(i<minSize){
+      if(bvc.voxelData.get(i)){
+        combinedData.set(i,false);
+      } else {
+        combinedData.set(i,this.voxelData.get(i));
+      }
+    } else {
+      if(originalIsTaller){
+        combinedData.set(i,this.voxelData.get(i));
+      } else {
+        combinedData.set(i,false);
+      }
+    }
+  }
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData);
+}
+
+BinaryVoxelCube.prototype.booleanInversion = function(){
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData.not());
+}
+
+BinaryVoxelCube.prototype.erode = function(size){
+  const sizeXY=this.sizeX*this.sizeY;
+  const sizeXYZ=this.sizeX*this.sizeY*this.sizeZ;
+  const self=this;
+  let ret=this.voxelData.copy();
+
+  function indexToCoords(idx){
+    let z=Math.floor(idx/sizeXY);
+    let rem=idx%sizeXY;
+    let y=Math.floor(rem/self.sizeX);
+    let x=rem%self.sizeX;
+    return {x,y,z};
+  }
+
+  /*function coordsToIndex(x,y,z){
+    return z*sizeXY+y*self.sizeX+x;
+  }*/
+
+  function isBorder(idx){
+    coords=indexToCoords(idx);
+    for(let dz=-size;dz<size;dz++){
+      for(let dy=-size;dy<size;dy++){
+        for(let dx=-size;dx<size;dx++){
+          if(coords.x+dx>=0 && coords.x+dx<self.sizeX-1 && coords.y+dy>=0 && coords.y+dy<self.sizeY-1 && coords.z+dz>=0 && coords.z+dz<self.sizeZ-1){
+            console.log(self.getVoxel(coords.x+dx,coords.y+dy,coords.z+dz)?1:0);
+            if(self.getVoxel(coords.x+dx,coords.y+dy,coords.z+dz)) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  for(let i = 0; i<sizeXYZ; i++){
+    if(isBorder(i)){
+      ret.set(i,false);
+    }
+  };
+
+  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,ret);
 }
 
 module.exports = BinaryVoxelCube;

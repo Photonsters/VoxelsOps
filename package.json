@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/Antharon/BinaryVoxelBooleanFilters#readme",
   "dependencies": {
+    "pngjs": "^3.3.3",
+    "rimraf": "^2.6.2",
     "sjcl": "^1.0.7"
   }
 }
