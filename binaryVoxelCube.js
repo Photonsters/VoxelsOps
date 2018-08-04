@@ -14,7 +14,7 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels){
   //copy voxel data into new variable to prevent overriding;
   this.voxelData=pixels.copy();
   this.refreshBoundingBox();
-  console.log('BoundingBox:',JSON.stringify(this.boundingBox));
+  this.type='BinaryVoxelCube';
 };
 
 BinaryVoxelCube.prototype.getVoxel = function(x,y,z){
@@ -283,6 +283,9 @@ BinaryVoxelCube.prototype.refreshBoundingBox = function(){
 }
 
 BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cube
+  if(bvc.type=='BinaryVoxelPattern'){
+    throw new Error('do not use boolean add with infinite patterns! cut part of them with intersect first!');
+  }
   if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
     throw new Error('cubes have different profile!');
   }
@@ -319,75 +322,103 @@ BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cub
 }
 
 BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary voxel cube
-  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
-    throw new Error('cubes have different profile!');
-  }
-  let originalIsTaller=!!bvc.size<this.sizeZ;
-  //let size=this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ;
-  let minZ=(originalIsTaller?bvc:this).sizeZ;
-  let combinedData=new bitArray(this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ);
-  let boundingBox={
-    left:Math.max(this.boundingBox.left,bvc.boundingBox.left),
-    right:Math.min(this.boundingBox.right,bvc.boundingBox.right),
-    front:Math.max(this.boundingBox.front,bvc.boundingBox.front),
-    back:Math.min(this.boundingBox.back,bvc.boundingBox.back),
-    bottom:Math.max(this.boundingBox.bottom,bvc.boundingBox.bottom),
-    top:Math.min(this.boundingBox.top,bvc.boundingBox.top)
-  }
-  for(let z=boundingBox.bottom;z<boundingBox.top;z++){
-    for(let y=boundingBox.front;y<boundingBox.back;y++){
-      for(let x=boundingBox.left;x<boundingBox.right;x++){
-        let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
-        if(z<minZ){
-          combinedData.set(idx,(this.voxelData.get(idx)&&bvc.voxelData.get(idx)))
-        } else {
-          combinedData.set(idx,false);
+  if(bvc.type=='BinaryVoxelPattern'){
+    let combinedData=new bitArray(this.sizeX*this.sizeY*this.sizeZ);
+
+    for(let z=this.boundingBox.bottom;z<this.boundingBox.top;z++){
+      for(let y=this.boundingBox.front;y<this.boundingBox.back;y++){
+        for(let x=this.boundingBox.left;x<this.boundingBox.right;x++){
+          let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
+          combinedData.set(idx,(this.getVoxel(x,y,z)&&bvc.getVoxel(x,y,z)))
         }
       }
     }
-  }
+    return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
+  } else {
+    if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
+      throw new Error('cubes have different profile!');
+    }
+    let originalIsTaller=!!bvc.size<this.sizeZ;
+    //let size=this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ;
+    let minZ=(originalIsTaller?bvc:this).sizeZ;
+    let combinedData=new bitArray(this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ);
+    let boundingBox={
+      left:Math.max(this.boundingBox.left,bvc.boundingBox.left),
+      right:Math.min(this.boundingBox.right,bvc.boundingBox.right),
+      front:Math.max(this.boundingBox.front,bvc.boundingBox.front),
+      back:Math.min(this.boundingBox.back,bvc.boundingBox.back),
+      bottom:Math.max(this.boundingBox.bottom,bvc.boundingBox.bottom),
+      top:Math.min(this.boundingBox.top,bvc.boundingBox.top)
+    }
+    for(let z=boundingBox.bottom;z<boundingBox.top;z++){
+      for(let y=boundingBox.front;y<boundingBox.back;y++){
+        for(let x=boundingBox.left;x<boundingBox.right;x++){
+          let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
+          if(z<minZ){
+            combinedData.set(idx,(this.voxelData.get(idx)&&bvc.voxelData.get(idx)))
+          } else {
+            combinedData.set(idx,false);
+          }
+        }
+      }
+    }
 
-  return new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData);
+    return new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData);
+  }
 }
 
 BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary voxel cube
-  if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
-    throw new Error('cubes have different profile!');
-  }
-  let originalIsTaller=!!bvc.size<this.sizeZ;
-  //let size=this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ;
-  let minZ=(originalIsTaller?bvc:this).sizeZ;
-  let combinedData=new bitArray(this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ);
-  let boundingBox={
-    left:Math.min(this.boundingBox.left,bvc.boundingBox.left),
-    right:Math.max(this.boundingBox.right,bvc.boundingBox.right),
-    front:Math.min(this.boundingBox.front,bvc.boundingBox.front),
-    back:Math.max(this.boundingBox.back,bvc.boundingBox.back),
-    bottom:Math.min(this.boundingBox.bottom,bvc.boundingBox.bottom),
-    top:Math.max(this.boundingBox.top,bvc.boundingBox.top)
-  }
-  for(let z=boundingBox.bottom;z<boundingBox.top;z++){
-    for(let y=boundingBox.front;y<boundingBox.back;y++){
-      for(let x=boundingBox.left;x<boundingBox.right;x++){
-        let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
-        if(z<minZ){
-          if(bvc.voxelData.get(idx)){
-            combinedData.set(idx,false);
+  if(bvc.type=='BinaryVoxelPattern'){ //this hack allows to use patterns, it is even much simpler than standard case
+    let combinedData=new bitArray(this.sizeX*this.sizeY*this.sizeZ);
+    for(let z=this.boundingBox.bottom;z<this.boundingBox.top;z++){
+      for(let y=this.boundingBox.front;y<this.boundingBox.back;y++){
+        for(let x=this.boundingBox.left;x<this.boundingBox.right;x++){
+          let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
+          combinedData.set(idx,this.getVoxel(x,y,z)&&!bvc.getVoxel(x,y,z));
+        }
+      }
+    }
+
+    return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData);
+  } else {
+    if(bvc.sizeX!==this.sizeX || bvc.sizeY!==this.sizeY){
+      throw new Error('cubes have different profile!');
+    }
+    let originalIsTaller=!!bvc.size<this.sizeZ;
+    //let size=this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ;
+    let minZ=(originalIsTaller?bvc:this).sizeZ;
+    let combinedData=new bitArray(this.sizeX*this.sizeY*(originalIsTaller?this:bvc).sizeZ);
+    let boundingBox={
+      left:Math.min(this.boundingBox.left,bvc.boundingBox.left),
+      right:Math.max(this.boundingBox.right,bvc.boundingBox.right),
+      front:Math.min(this.boundingBox.front,bvc.boundingBox.front),
+      back:Math.max(this.boundingBox.back,bvc.boundingBox.back),
+      bottom:Math.min(this.boundingBox.bottom,bvc.boundingBox.bottom),
+      top:Math.max(this.boundingBox.top,bvc.boundingBox.top)
+    }
+    for(let z=boundingBox.bottom;z<boundingBox.top;z++){
+      for(let y=boundingBox.front;y<boundingBox.back;y++){
+        for(let x=boundingBox.left;x<boundingBox.right;x++){
+          let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
+          if(z<minZ){
+            if(bvc.voxelData.get(idx)){
+              combinedData.set(idx,false);
+            } else {
+              combinedData.set(idx,this.voxelData.get(idx))
+            }
           } else {
-            combinedData.set(idx,this.voxelData.get(idx))
-          }
-        } else {
-          if(originalIsTaller){
-            combinedData.set(idx,this.voxelData.get(idx));
-          } else {
-            combinedData.set(idx,false);
+            if(originalIsTaller){
+              combinedData.set(idx,this.voxelData.get(idx));
+            } else {
+              combinedData.set(idx,false);
+            }
           }
         }
       }
     }
-  }
 
-  return new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData);
+    return new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData);
+  }
 }
 
 BinaryVoxelCube.prototype.booleanInversion = function(){

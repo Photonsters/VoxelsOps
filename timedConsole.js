@@ -1,7 +1,7 @@
 let startTime = Date.now();
 function timedLog(...args){
   let miliseconds=Date.now()-startTime;
-  seconds=miliseconds/1000;
+  seconds=Math.round(miliseconds)/1000;
   minutes=Math.floor(seconds/60);
   hours=Math.floor(seconds/3600);
 
@@ -18,7 +18,7 @@ function timedLog(...args){
     seconds=seconds%60;
   }
 
-  let ret=hours+":"+minutes+":"+seconds;
+  let ret=hours+":"+minutes+":"+((''+seconds).substring(0,5));
 
   console.log(ret+": ", ...args);
 }
