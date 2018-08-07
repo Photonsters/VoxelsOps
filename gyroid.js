@@ -36,6 +36,22 @@ parser.addArgument(
 );
 
 parser.addArgument(
+  [ '-b', '--block' ],
+  {
+    help: 'exponent for blocky erosion, recomended 1-2 (def.: 1)',
+    defaultValue: 1
+  }
+);
+
+parser.addArgument(
+  [ '--smooth' ],
+  {
+    help: 'smooth erode when scaled (def.: 1)',
+    defaultValue: 1
+  }
+);
+
+parser.addArgument(
   [ '-p', '--pattern' ],
   {
     help: 'pattern size (in voxels, def.: 100)',
@@ -66,7 +82,7 @@ const big=new voxelCube(photonFile.header.resX,photonFile.header.resY,photonFile
 timedLog("model loaded");
 console.log("Big volume:",big.volume());
 
-let small=big.erode(parseInt(args.radius));
+let small=big.erode(parseInt(args.radius),parseInt(args.block),!!parseInt(args.smooth));
 timedLog("model eroded");
 
 let hollowed=big.booleanDifference(small);

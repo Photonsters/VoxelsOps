@@ -2,10 +2,9 @@ const bitArray = require('bit-array');
 
 function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels){
   if(sizeX*sizeY*sizeZ !== pixels.length){
-    console.error('pixel do not match size');
     console.log("expected size:",sizeX*sizeY*sizeZ);
     console.log("real size:",pixels.length);
-    return false;
+    throw new Error('pixel do not match size');
   }
   this.sizeX=sizeX;
   this.sizeY=sizeY;
@@ -19,7 +18,7 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels){
 
 BinaryVoxelCube.prototype.getVoxel = function(x,y,z){
   if(z<0){
-    return true;
+    return false;
   } else if(x<0 || y<0 || x>=this.sizeX || y>=this.sizeY || z>=this.sizeZ) {
     return false;
   }
@@ -425,48 +424,177 @@ BinaryVoxelCube.prototype.booleanInversion = function(){
   return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData.not());
 }
 
-BinaryVoxelCube.prototype.erode = function(r){
-  const self=this;
-  const pixelsToBeWorked=(this.boundingBox.right-this.boundingBox.left)*(this.boundingBox.back-this.boundingBox.front)*(this.boundingBox.top-this.boundingBox.bottom);
-  let old=this.voxelData.copy();
-
-  function getVoxel(x,y,z){
-    return old.get(z*self.sizeX*self.sizeY+y*self.sizeX+x);
+BinaryVoxelCube.prototype.translate = function(dx,dy,dz){
+  let ret=new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,new bitArray(this.sizeX*this.sizeY*this.sizeZ))
+  let sizeXY=this.sizeX*this.sizeY;
+  for(let z=this.boundingBox.bottom;z<=this.boundingBox.top;z++){
+    for(let y=this.boundingBox.front;y<=this.boundingBox.back;y++){
+      for(let x=this.boundingBox.left;x<=this.boundingBox.right;x++){
+        ret.setVoxel(x+dx,y+dy,z+dz,this.getVoxel(x,y,z));
+      }
+    }
   }
+  ret.refreshBoundingBox();
+  return ret;
+}
+
+BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
+  let work=new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ, this.voxelData.copy());
+  for(let i=0;i<scale;i++){
+    console.log('scaling down');
+    work=work.scaleDown(smooth);
+  }
+  let ret=new BinaryVoxelCube(work.sizeX,work.sizeY,work.sizeZ, new bitArray(work.sizeX*work.sizeY*work.sizeZ));
 
   function isInside(x,y,z){
-    if(!getVoxel(x,y,z)){
+    if(!work.getVoxel(x,y,z)){
       return false;
     }
-    if(!getVoxel(x-1,y,z)){
+    if(!work.getVoxel(x-1,y,z)){
       return false;
-    } else if(!getVoxel(x+1,y,z)){
+    } else if(!work.getVoxel(x+1,y,z)){
       return false;
-    } else if(!getVoxel(x,y-1,z)){
+    } else if(!work.getVoxel(x,y-1,z)){
       return false;
-    } else if(!getVoxel(x,y+1,z)){
+    } else if(!work.getVoxel(x,y+1,z)){
       return false;
-    } else if(!getVoxel(x,y,z-1)){
+    } else if(!work.getVoxel(x,y,z-1)){
       return false;
-    } else if(!getVoxel(x,y,z+1)){
+    } else if(!work.getVoxel(x,y,z+1)){
       return false;
     }
     return true;
   }
-  let ret=new bitArray(this.sizeX*this.sizeY*this.sizeZ);
   for(let i=0;i<r;i++){
     console.log("erode cycle no. ",(i+1));
-    for(let z=this.boundingBox.bottom;z<=this.boundingBox.top;z++){
-      for(let y=this.boundingBox.front;y<=this.boundingBox.back;y++){
-        for(let x=this.boundingBox.left;x<=this.boundingBox.right;x++){
-          ret.set(z*this.sizeY*this.sizeX+y*this.sizeX+x,isInside(x,y,z));
+    for(let z=work.boundingBox.bottom;z<=work.boundingBox.top;z++){
+      for(let y=work.boundingBox.front;y<=work.boundingBox.back;y++){
+        for(let x=work.boundingBox.left;x<=work.boundingBox.right;x++){
+          ret.setVoxel(x,y,z,isInside(x,y,z));
         }
       }
     }
-    old=ret.copy();
+    work.voxelData=ret.voxelData;
+    work.refreshBoundingBox();
+    ret.voxelData=new bitArray(work.sizeX*work.sizeY*work.sizeZ);
   }
 
-  return new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,ret);
+  for(let i=0;i<scale;i++){
+    console.log('scaling up')
+    work=work.scaleUp(smooth);
+  }
+
+  return work;
+}
+
+BinaryVoxelCube.prototype.scaleDown = function(smooth=false){
+  let ret=new BinaryVoxelCube(this.sizeX >> 1,this.sizeY >> 1,this.sizeZ >> 1,new bitArray((this.sizeX >> 1)*(this.sizeY >> 1)*(this.sizeZ >> 1)));
+  ret.originalResolution=this.originalResolution||[];
+  ret.originalResolution.push({
+    x:this.sizeX,
+    y:this.sizeY,
+    z:this.sizeZ
+  });
+  for(let z=this.boundingBox.bottom;z<=this.boundingBox.top;z+=2){
+    for(let y=this.boundingBox.front;y<=this.boundingBox.back;y+=2){
+      for(let x=this.boundingBox.left;x<=this.boundingBox.right;x+=2){
+        let val;
+        if(smooth){
+          val=Math.round((
+            this.getVoxel(x,y,z)
+            +this.getVoxel(x+1,y,z)
+            +this.getVoxel(x,y+1,z)
+            +this.getVoxel(x+1,y+1,z)
+            +this.getVoxel(x,y,z+1)
+            +this.getVoxel(x+1,y,z+1)
+            +this.getVoxel(x,y+1,z+1)
+            +this.getVoxel(x+1,y+1,z+1))/8)
+        } else {
+          val=this.getVoxel(x,y,z)
+        }
+        ret.setVoxel(x >> 1, y >> 1, z >> 1, val);
+      }
+    }
+  }
+  ret.refreshBoundingBox();
+  return ret;
+}
+
+BinaryVoxelCube.prototype.scaleUp = function(smooth=false,additive=true){
+  let ret;
+  if(this.originalResolution && this.originalResolution.length){
+    let res=this.originalResolution.pop();
+    ret=new BinaryVoxelCube(res.x,res.y,res.z,new bitArray(res.x*res.y*res.z));
+  } else {
+    ret=new BinaryVoxelCube(this.sizeX << 1,this.sizeY << 1,this.sizeZ << 1,new bitArray((this.sizeX*this.sizeY*this.sizeZ)<<3));
+  }
+
+  const self=this;
+
+  function addVoxel(x,y,z,val){
+    ret.setVoxel(x*2,y*2,z*2,val);
+    ret.setVoxel(x*2+1,y*2,z*2,val);
+    ret.setVoxel(x*2+1,y*2+1,z*2,val);
+    ret.setVoxel(x*2+1,y*2,z*2+1,val);
+    ret.setVoxel(x*2+1,y*2+1,z*2+1,val);
+    ret.setVoxel(x*2,y*2+1,z*2,val);
+    ret.setVoxel(x*2,y*2+1,z*2+1,val);
+    ret.setVoxel(x*2,y*2,z*2+1,val);
+  }
+
+  function addVoxelSmooth(x,y,z,val){
+    if(additive){
+      if (!val) {
+        addVoxel(x,y,z,val);
+        return;
+      }
+    } else {
+      if (val) {
+        addVoxel(x,y,z,val);
+        return;
+      }
+    }
+
+    let t=self.getVoxel(x,y,z+1)==val;
+    let b=self.getVoxel(x,y,z-1)==val;
+    let n=self.getVoxel(x,y+1,z)==val;
+    let s=self.getVoxel(x,y-1,z)==val;
+    let w=self.getVoxel(x-1,y,z)==val;
+    let e=self.getVoxel(x+1,y,z)==val;
+
+    ret.setVoxel(x*2,y*2+1,z*2+1,(t && n && w)?val:!val);
+
+    ret.setVoxel(x*2+1,y*2+1,z*2+1,(t && n && e)?val:!val);
+
+    ret.setVoxel(x*2,y*2,z*2+1,(t && s && w)?val:!val);
+
+    ret.setVoxel(x*2+1,y*2,z*2+1,(t && s && e)?val:!val);
+
+    ret.setVoxel(x*2,y*2+1,z*2,(b && n && w)?val:!val);
+
+    ret.setVoxel(x*2+1,y*2+1,z*2,(b && n && e)?val:!val);
+
+    ret.setVoxel(x*2,y*2,z*2,(b && s && w)?val:!val);
+
+    ret.setVoxel(x*2+1,y*2,z*2,(b && s && e)?val:!val);
+  }
+
+  for(let z=this.boundingBox.bottom;z<=this.boundingBox.top;z++){
+    for(let y=this.boundingBox.front;y<=this.boundingBox.back;y++){
+      for(let x=this.boundingBox.left;x<=this.boundingBox.right;x++){
+        let val=this.getVoxel(x,y,z);
+        if(smooth){
+          addVoxelSmooth(x,y,z,val);
+        } else {
+          addVoxel(x,y,z,val);
+        }
+      }
+    }
+  }
+
+  ret.originalResolution=this.originalResolution;
+  ret.refreshBoundingBox();
+  return ret;
 }
 
 BinaryVoxelCube.prototype.dilate = function(r){
