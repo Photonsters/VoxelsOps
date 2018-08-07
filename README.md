@@ -16,3 +16,5 @@ gyroid infill script accepts following optional parameters
 * -r, --radius:     erosion radius, or simply thickness of walls in voxels (default is 15 vx)
 * -p, --patters:    pattern size in voxels (default is 100 vx)
 * -t, --tolerance:  gyroid generator tolerance, higher the number, thicker the gyroid walls are (default is 0.3)
+* -b, --block:      exponent for blocky erosion, recomended 1-2 (def.: 1)
+* --smooth:         smooth erode when scaled (def.: 1)
