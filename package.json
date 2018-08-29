@@ -4,7 +4,7 @@
   "description": "this library will process three-dimensional matrix of bonary data with boolean operations and some helper filters",
   "main": "loader.js",
   "scripts": {
-    "test": "test.js"
+    "start": "cd app; electron .;cd .."
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,9 @@
     "argparse": "^1.0.10",
     "pngjs": "^3.3.3",
     "rimraf": "^2.6.2",
-    "rle": "^1.0.2",
     "sjcl": "^1.0.7"
+  },
+  "devDependencies": {
+    "electron": "^2.0.6"
   }
 }

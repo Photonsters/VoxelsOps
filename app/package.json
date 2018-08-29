@@ -1,0 +1,23 @@
+{
+  "name": "gyroid-infill-generator",
+  "version": "0.0.0",
+  "description": "Photonsters gyroid infill generator",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "node pack"
+  },
+  "repository": "https://github.com/Photonsters/BinaryVoxels",
+  "keywords": [
+    "Electron",
+    "binary voxels",
+    "infill generator",
+    "gyroid",
+    "photonsters"
+  ],
+  "author": "Antharon",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^2.0.0"
+  }
+}

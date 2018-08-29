@@ -1,6 +1,6 @@
-const voxelCube = require('./binaryVoxelCube.js');
-const fileLoader = require('./loader.js');
-const exportCube = require('./exportImages.js');
+const voxelCube = require('./modules/binaryVoxelCube.js');
+const fileLoader = require('./modules/loader.js');
+const exportCube = require('./modules/exportImages.js');
 const ArgumentParser = require('argparse').ArgumentParser;
 
 var parser = new ArgumentParser({

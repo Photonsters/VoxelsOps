@@ -1,8 +1,8 @@
-const generators = require('./generators.js')
-const voxelCube = require('./binaryVoxelCube.js');
-const fileLoader = require('./loader.js');
-const exportCube = require('./exportImages.js');
-const timedLog = require('./timedConsole.js');
+const generators = require('./modules/generators.js')
+const voxelCube = require('./modules/binaryVoxelCube.js');
+const fileLoader = require('./modules/loader.js');
+const exportCube = require('./modules/exportImages.js');
+const timedLog = require('./modules/timedConsole.js');
 const ArgumentParser = require('argparse').ArgumentParser;
 const startTime = Date.now();
 

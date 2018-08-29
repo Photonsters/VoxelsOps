@@ -1,0 +1,122 @@
+.hidden {
+  display:none !important;
+}
+
+#dataInput {
+  display:inline-block;
+  width:451px;
+  vertical-align:top;
+}
+
+#preview {
+  display:inline-block;
+  width:250px;
+  vertical-align:top;
+  text-align: center;
+}
+
+#preview div {
+  display:inline-block;
+  vertical-align:middle;
+  background-image:url('res/photonsters.png');
+  background-repeat:no-repeat;
+  background-size: 90%;
+  background-position: center center;
+}
+
+#preview .aligner {
+  vertical-align:middle;
+  height:206px;
+  width:0px;
+  display:inline-block;
+}
+
+progress {
+  -webkit-appearance: none;
+  position: absolute;
+  width: calc(100% - 50px);
+  z-index: -1;
+  height: 25px;
+  display: block;
+}
+
+progress::-webkit-progress-bar {
+  border:1px solid black;
+  background-color:#eee;
+}
+
+progress::-webkit-progress-value {
+  background-color:#ccf;
+}
+
+progress.start::-webkit-progress-value {
+  background-color:#ccf;
+}
+
+progress.end::-webkit-progress-value {
+  background-color:#cfc;
+}
+
+progress.error::-webkit-progress-value {
+  background-color:#fcc;
+}
+
+#loaders fieldset {
+  height:43px;
+  text-align:center;
+}
+
+#loaders fieldset input {
+  margin-top: 4px;
+  border: none;
+  background: none;
+  font-weight: bold;
+  width:calc(100% - 100px);
+  text-align:center;
+}
+
+#dataInput label:not(.checkboxLabel) {
+  font-weight: bold;
+  width: 150px;
+  display: inline-block;
+  text-align:right;
+}
+
+#dataInput .checkboxLabel {
+  margin: 0.5em 0;
+  display: inline-block;
+}
+
+#dataInput .rangeDisplay {
+  border:none;
+  background:none;
+  font-weight:bold;
+  width:100px;
+}
+
+#dataInput input[type=range] {
+    width: 160px;
+    margin: 0 15px;
+    height:1em;
+}
+
+#photonFile {
+  margin: 0 15px;
+}
+
+#dataInput input[type=checkbox] {
+    display:none;
+}
+
+#dataInput input[type=checkbox] + .checkboxProxy {
+  margin-left: 168px;
+  display:inline-block;
+  width:1em;
+  height:1em;
+  border:1px solid black;
+  vertical-align:bottom;
+}
+
+#dataInput input[type=checkbox]:checked + .checkboxProxy {
+  background-color:#aaa;
+}

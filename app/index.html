@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Gyroid infill generator by Photonsters</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <h1>Infill generator</h1>
+      <fieldset id="dataInput">
+        <legend>Data input:</legend>
+        <label for="PhotonFile">Photon file:</label>
+        <input type="file" id="photonFile" placeholder="Photon file">
+        <br><br>
+        <label for="radius">Wall thickness:</label>
+        <input type="range" min="0" max="16" value="4" id="radius">
+        <input typ="text" readonly="readonly" class="rangeDisplay" value="8px / ~0.4mm" for="radius">
+        <br><br>
+        <label for="block">Simplification factor:</label>
+        <input type="range" min="0" max="4" value="1" id="block">
+        <input typ="text" readonly="readonly" class="rangeDisplay" value="x2" for="block">
+        <br>
+        <label for="smooth" class="checkboxLabel"><input type="checkbox" id="smooth"><span class="checkboxProxy"></span> approximate smooth edges</label>
+        <br><br>
+        <label for="pattern">Gyroid wavelength:</label>
+        <input type="range" min="10" max="500" value="100" id="pattern">
+        <input typ="text" readonly="readonly" class="rangeDisplay" value="100px" for="pattern">
+        <br><br>
+        <label for="volume">Gyroid tolerance:</label>
+        <input type="range" min="0" max="1.5" value="0.25" step="0.05" id="tolerance">
+        <input typ="text" readonly="readonly" class="rangeDisplay" value="0.25" for="tolerance">
+        <br><br>
+        <button id="generate" type="button">Generate</button>
+        <button id="cancel" class="hidden" type="button">Cancel</button>
+      </fieldset>
+      <fieldset id="preview">
+        <legend>Data input:</legend>
+        <div style="width:180px;height:80px;border:1px solid black;color:red;padding-top:100px;font-weight:bold">
+          PREVIEW COMMING SOON
+        </div>
+        <p class="aligner"></p>
+      </fieldset>
+    <script>
+      const { ipcRenderer } = require('electron');
+      //require('./renderer.js');
+    </script>
+    <script src="js/logging.js"></script>
+    <script src="js/infill-ui.js"></script>
+    <div id="loaders"></div>
+  </body>
+</html>
