@@ -24,6 +24,6 @@
     "sjcl": "^1.0.7"
   },
   "devDependencies": {
-    "electron": "^3.0.0"
+    "electron": "^3.0.0-beta"
   }
 }

@@ -18,6 +18,6 @@
   "author": "Antharon",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^3.0.0"
+    "electron": "^3.0.0-beta"
   }
 }
