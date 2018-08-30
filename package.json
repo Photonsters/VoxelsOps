@@ -24,6 +24,6 @@
     "sjcl": "^1.0.7"
   },
   "devDependencies": {
-    "electron": "^2.0.6"
+    "electron": "^3.0.0"
   }
 }

@@ -1,8 +1,8 @@
-const fileLoader=require('../../app/modules/loader.js');
-const voxelCube=require('../../app/modules/binaryVoxelCubeAsync.js');
-const event=require('../../app/modules/event.js');
-const exportImages=require('../../app/modules/exportImages.js');
-const importImages=require('../../app/modules/imageLoader.js');
+const fileLoader=require('../../modules/loader.js');
+const voxelCube=require('../../modules/binaryVoxelCubeAsync.js');
+const event=require('../../modules/event.js');
+const exportImages=require('../../modules/exportImages.js');
+const importImages=require('../../modules/imageLoader.js');
 
 const commonChannel=new event();
 commonChannel.on("progress",(data)=>{
