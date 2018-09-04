@@ -1,11 +1,14 @@
 # BinaryVoxelBooleanFilters
-this library will process three-dimensional matrix of binary data with boolean operations and some helper filters __
+this library will process three-dimensional matrix of binary data with boolean operations and some helper filters
+
 # Dependencies
-node.js __
+node.js
+
 # Instalation
-clone repository __
-run 'npm i' __
-go to './app' __
-run 'npm i' again __
+clone repository<br />
+run 'npm i'<br />
+go to './app'<br />
+run 'npm i' again
+
 # Gyroid infill generator
-in './app' run 'npm run start' to start application __
+in './app' run 'npm run start' to start application
