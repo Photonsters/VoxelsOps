@@ -1049,7 +1049,7 @@ BinaryVoxelCube.prototype.changeZ = function(change,relative=true){
 }
 
 //map is a array (on numbers 0-255), must have same dimensions as layer
-BinaryVoxelCube.prototype.verticalMap = function(map, maxZ=25, minZ=0,inBox=true){
+BinaryVoxelCube.prototype.verticalMap = function(map, maxZ=10, minZ=0,inBox=true){
   return new Promise((resolve,reject)=>{
     this.channel.emit("progress",{
       method:'verticalMap',
@@ -1078,22 +1078,42 @@ BinaryVoxelCube.prototype.verticalMap = function(map, maxZ=25, minZ=0,inBox=true
         if(inBox){
           percent=Math.round((this.boundingBox.back-this.boundingBox.front)*(this.boundingBox.right-this.boundingBox.left)/100);
         } else {
-          percent=Math.round(sizeX*sizeY/100);
+          percent=Math.round(this.sizeX*this.sizeY/100);
         }
+        const factor=(maxZ-minZ);
         for(let y=inBox?this.boundingBox.front:0;y<(inBox?(this.boundingBox.back+1):this.sizeY);y++){
           for(let x=inBox?this.boundingBox.left:0;x<(inBox?(this.boundingBox.right+1):this.sizeX);x++){
             counter++;
             if(map[y*this.sizeX+x]>0){
-              let thickness=Math.round(map[y*this.sizeX+x]/(maxZ-minZ))+minZ;
+              let thickness=Math.round(map[y*this.sizeX+x]/255*factor)+minZ;
               let z=inBox?this.boundingBox.top:this.sizeZ-1;
               while(!this.getVoxel(x,y,z)&&z>0){
                 z--;
               }
               if(thickness>0){
+                this.channel.emit("progress",{
+                  method:'verticalMap',
+                  message:"adding pixels...",
+                  inBox,
+                  position:[x,y],
+                  height:thickness,
+                  formula:"Math.round("+map[y*this.sizeX+x]+"/255*"+factor+")+"+minZ,
+                  percent:counter/percent,
+                  state:"pendng"
+                });
                 for(let i=0;i<thickness;i++){
                   ret.setVoxel(x,y,z+i,true);
                 }
               } else {
+                this.channel.emit("progress",{
+                  method:'verticalMap',
+                  message:"removing pixels...",
+                  inBox,
+                  position:[x,y],
+                  height:-thickness,
+                  percent:counter/percent,
+                  state:"pendng"
+                });
                 for(let i=0;i>thickness;i--){
                   if(z+i>=0){
                     ret.setVoxel(x,y,z+i,false);

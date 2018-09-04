@@ -15,7 +15,7 @@ function pngToArray(png){
   return new Promise((resolve,reject)=>{
     ret=[];
     for(let i=0;i<png.data.length;i=i+4){
-      ret.push(parseInt(png.data[i],16));
+      ret.push(parseInt(png.data[i]));
     }
     resolve(ret);
   });

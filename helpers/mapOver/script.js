@@ -11,14 +11,16 @@ commonChannel.on("progress",(data)=>{
 
 fileLoader.async('./model.photon',commonChannel).then((photonFile)=>{
   new voxelCube(photonFile.header.resX,photonFile.header.resY,photonFile.layers.length,photonFile.voxels,null,commonChannel).then((model)=>{
-    importImages.loadImage('./texture.png').then(png=>{
-      importImages.pngToArray(png).then(heightmap=>{
-        model.verticalMap(heightmap,50).then(ret=>{
-          exportImages(ret,'./export',commonChannel).then(()=>{
-            console.log('done');
+    model.booleanDifference(model).then(model=>{
+      importImages.loadImage('./texture.png').then(png=>{
+        importImages.pngToArray(png).then(heightmap=>{
+          model.verticalMap(heightmap,50,0,false).then(ret=>{
+            exportImages(ret,'./export',commonChannel).then(()=>{
+              console.log('done');
+            });
           });
-        })
-      })
-    })
+        });
+      });
+    });
   });
 });
