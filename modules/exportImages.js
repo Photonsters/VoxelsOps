@@ -58,7 +58,7 @@ function exportCube(voxelCube,directory,channel=null){
         state:"pending"
       });
       voxelCube.getLayer(z+1).then(layer => {
-        savePng(voxelCube.sizeX,voxelCube.sizeY,layer,directory+"/slice__"+leftpad((z+1),4)+".png").then(()=>{
+        savePng(voxelCube.sizeX,voxelCube.sizeY,layer,directory+"/slice__"+leftpad((z),4)+".png").then(()=>{
           if((z+1)<voxelCube.sizeZ){
             save(z+1);
           } else {
@@ -77,7 +77,5 @@ function exportCube(voxelCube,directory,channel=null){
     save(0);
   });
 }
-
-//savePng(4,4,[1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0],'./pngtest/slice__0000.png');
 
 module.exports = exportCube;

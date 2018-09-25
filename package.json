@@ -19,9 +19,11 @@
   "dependencies": {
     "argparse": "^1.0.10",
     "bit-array": "^0.2.2",
+    "isosurface": "^1.0.0",
     "pngjs": "^3.3.3",
     "rimraf": "^2.6.2",
-    "sjcl": "^1.0.7"
+    "sjcl": "^1.0.7",
+    "stl": "^1.1.1"
   },
   "devDependencies": {
     "electron": "^3.0.0-beta"

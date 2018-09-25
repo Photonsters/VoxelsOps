@@ -122,7 +122,7 @@ function generateGyroid(pattern=100,tolerance=0.15,name='gyroid'){
 function gyroidInfill(radius, block, smooth, pattern, tolerance){
   get('temp').then(model => {
     console.log("model fetched",model.volume());
-    model.erode(radius,block,smooth).then(model => {
+    model.erodeDirectional({x:radius,y:radius,z:0},block,smooth).then(model => {
       console.log("model eroded",model.volume());
       let eroded=model;
       model.save('gyroid_eroded').then(()=>{
