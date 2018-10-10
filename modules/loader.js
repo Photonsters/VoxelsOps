@@ -23,7 +23,8 @@ function loadPhotonFile(d,channel=null) {
     method:'loadPhotonFile',
     message:"loading photon file (0/"+header.layers*header.resX*header.resY+")",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
 
   //console.log(header);
@@ -83,7 +84,8 @@ function getVoxels(photonFile, channel=null) {
               method:'loadPhotonFile',
               message:"loading photon file ("+totalVolume+"/"+expectedVolume+")",
               percent:pixelIndex/step,
-              state:"pending"
+              state:"pending",
+              functionId
             });
           }
         }
@@ -97,7 +99,8 @@ function getVoxels(photonFile, channel=null) {
               method:'loadPhotonFile',
               message:"loading photon file ("+totalVolume+"/"+expectedVolume+")",
               percent:pixelIndex/step,
-              state:"pending"
+              state:"pending",
+              functionId
             });
           }
         }
@@ -112,7 +115,8 @@ function getVoxels(photonFile, channel=null) {
     method:'loadPhotonFile',
     message:"photon file loaded",
     percent:100,
-    state:"end"
+    state:"end",
+    functionId
   });
   return voxelArray;
 }
@@ -123,8 +127,10 @@ function loadFile(filename){
   return photonFile;
 }
 
+let functionId
 function loadFileAsync(filename, channel=null){
   channel=channel||new event();
+  functionId=channel.generateId();
   return new Promise((resolve,reject) => {
     try {
       let photonFile = loadPhotonFile(new DataView(fs.readFileSync(filename,null).buffer), channel);

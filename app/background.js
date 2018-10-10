@@ -38,7 +38,7 @@ infoChannel.on("progress",(data)=>{
 });
 
 
-
+let zScale=1;
 function load(pathToFile,name=null){
   return new Promise((resolve,reject)=>{
     activeModel=name;
@@ -48,6 +48,7 @@ function load(pathToFile,name=null){
     }
 
     fileLoader.async(relativePath,infoChannel).then((photonFile)=>{
+      zScale=(photonFile.header.layerThickness/0.047);
       new voxelCube(photonFile.header.resX,photonFile.header.resY,photonFile.layers.length,photonFile.voxels,null,infoChannel).then((model)=>{
         models[name]=model;
         resolve(models[name]);
@@ -110,9 +111,9 @@ function preloadModel(modelPath){
   });
 }
 
-function generateGyroid(pattern=100,tolerance=0.15,name='gyroid'){
+function generateGyroid(pattern=100,tolerance=0.15,name='gyroid',zScale){
   return new Promise((resolve,reject)=>{
-    generators.gyroid(pattern,tolerance,infoChannel).then(pattern => {
+    generators.gyroid(pattern,tolerance,infoChannel,zScale).then(pattern => {
       patterns[name]=pattern;
       resolve(patterns[name]);
     });
@@ -122,12 +123,12 @@ function generateGyroid(pattern=100,tolerance=0.15,name='gyroid'){
 function gyroidInfill(radius, block, smooth, pattern, tolerance){
   get('temp').then(model => {
     console.log("model fetched",model.volume());
-    model.erodeDirectional({x:radius,y:radius,z:0},block,smooth).then(model => {
+    model.erodeDirectional({x:radius,y:radius,z:Math.round(radius*zScale)},block,smooth).then(model => {
       console.log("model eroded",model.volume());
       let eroded=model;
       model.save('gyroid_eroded').then(()=>{
         console.log("model saved as gyroid_eroded");
-        generateGyroid(pattern,tolerance,"temp").then(gyroid => {
+        generateGyroid(pattern,tolerance,"temp",zScale).then(gyroid => {
           console.log("gyroid pattern generated");
           gyroid.booleanIntersect(eroded).then(model=>{
             console.log("eroded and gyroid intersected",model.volume());

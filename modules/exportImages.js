@@ -45,7 +45,15 @@ function leftpad(number,length){
 
 function exportCube(voxelCube,directory,channel=null){
   this.channel=channel||new event();
+  const functionId=this.channel.generateId();
   const self=this;
+  self.channel.emit("progress",{
+    method:'saveLayer',
+    message:"exporting starts",
+    percent:100,
+    state:"start",
+    functionId
+  });
   return new Promise((resolve, reject)=>{
     rimraf.sync(directory);
     fs.mkdirSync(directory);
@@ -55,7 +63,8 @@ function exportCube(voxelCube,directory,channel=null){
         method:'saveLayer',
         message:"saving layer no. "+(z+1),
         percent:Math.round(z/voxelCube.sizeZ*100),
-        state:"pending"
+        state:"pending",
+        functionId
       });
       voxelCube.getLayer(z+1).then(layer => {
         savePng(voxelCube.sizeX,voxelCube.sizeY,layer,directory+"/slice__"+leftpad((z),4)+".png").then(()=>{
@@ -66,7 +75,8 @@ function exportCube(voxelCube,directory,channel=null){
               method:'saveLayer',
               message:"export finished",
               percent:100,
-              state:"end"
+              state:"end",
+              functionId
             });
             resolve();
           }

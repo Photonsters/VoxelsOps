@@ -28,4 +28,9 @@ eventChannel.prototype.emit = function(message, ...payload){
   }
 }
 
+idPool=0;
+eventChannel.prototype.generateId = function(){
+  return idPool++;
+}
+
 module.exports=eventChannel;

@@ -7,12 +7,14 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels,boundingBox=null,channel=null)
   } else {
     this.channel=new event();
   }
+  const functionId=this.channel.generateId();
   return new Promise((resolve, reject) => {
     this.channel.emit("progress",{
       method:"constructor",
       message:"testing data...",
       percent:0,
-      state:"start"
+      state:"start",
+      functionId
     });
     this.type='BinaryVoxelCube';
     this.sizeX=sizeX;
@@ -31,7 +33,8 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels,boundingBox=null,channel=null)
       method:"constructor",
       message:"loading voxel data...",
       percent:10,
-      state:"pending"
+      state:"pending",
+      functionId
     });
     try{
       this.voxelData=new bitArray(sizeX*sizeY*sizeZ);
@@ -40,14 +43,16 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels,boundingBox=null,channel=null)
         method:"constructor",
         message:"voxel data loaded",
         percent:75,
-        state:"pending"
+        state:"pending",
+        functionId
       });
     } catch (err){
       this.channel.emit("progress",{
         method:"constructor",
         message:"voxel data cannot be loaded",
         percent:100,
-        state:"error"
+        state:"error",
+        functionId
       });
       reject(err);
     }
@@ -55,7 +60,8 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels,boundingBox=null,channel=null)
       method:"constructor",
       message:"refreshing bounding box...",
       percent:75,
-      state:"pending"
+      state:"pending",
+      functionId
     });
     if(boundingBox){
       this.boundingBox=boundingBox;
@@ -63,7 +69,8 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels,boundingBox=null,channel=null)
         method:"constructor",
         message:"custom bounding box used, voxel cube initialised.",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
       resolve(this);
     } else {
@@ -72,16 +79,17 @@ function BinaryVoxelCube(sizeX,sizeY,sizeZ,pixels,boundingBox=null,channel=null)
           method:"constructor",
           message:"bounding box refreshed, voxel cube initialised.",
           percent:100,
-          state:"end"
+          state:"end",
+          functionId
         });
-        console.log("first refreshed bounding box",this.boundingBox);
         resolve(this);
       }).catch((err)=>{
         this.channel.emit("progress",{
           method:"constructor",
           message:"bounding box cannot be refreshed",
           percent:100,
-          state:"error"
+          state:"error",
+          functionId
         });
         reject(err);
       });
@@ -121,15 +129,12 @@ BinaryVoxelCube.prototype.volume = function(){
 }
 
 BinaryVoxelCube.prototype.coordsToIndex = function(x,y,z){
-  console.log('z: '+z+'x'+this.sizeY+'x'+this.sizeX+'='+(z*this.sizeY*this.sizeX));
-  console.log('y: '+y+'x'+this.sizeX+'='+(y*this.sizeX));
-  console.log('x: '+x);
-  console.log('=:'+(z*this.sizeY*this.sizeX+y*this.sizeX+x));
   return z*this.sizeY*this.sizeX+y*this.sizeX+x;
 }
 
 BinaryVoxelCube.prototype.refreshBoundingBox = function(){
   return new Promise((resolve,reject) => {
+    const functionId=this.channel.generateId();
     this.boundingBox={
       left:this.sizeX-1,
       right:0,
@@ -138,6 +143,13 @@ BinaryVoxelCube.prototype.refreshBoundingBox = function(){
       bottom:this.sizeZ-1,
       top:0
     }
+    this.channel.emit("progress",{
+      method:'refreshBoundingBox',
+      message:"bounding box calibration start",
+      percent:0,
+      state:"start",
+      functionId
+    });
     const percent=Math.floor(this.sizeX*this.sizeY*this.sizeZ/100);
     let processed=0;
     for(let z=0;z<this.sizeZ;z++){
@@ -152,7 +164,8 @@ BinaryVoxelCube.prototype.refreshBoundingBox = function(){
                 method:'refreshBoundingBox',
                 message:"calibrating bounding box",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             let value=this.getVoxel(x,y,z);
@@ -199,20 +212,23 @@ BinaryVoxelCube.prototype.refreshBoundingBox = function(){
       method:'refreshBoundingBox',
       message:"bounding box calibrated",
       percent:100,
-      state:"end"
+      state:"end",
+      functionId
     });
     resolve();
   });
 }
 
 BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cube
+  const functionId=this.channel.generateId();
   let percent;
   let processed;
   this.channel.emit("progress",{
     method:'booleanAdd',
     message:"boolean add start",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
   return new Promise((resolve, reject)=>{
     if(bvc.type=='BinaryVoxelPattern'){
@@ -220,7 +236,8 @@ BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cub
         method:"booleanAdd",
         message:"do not use boolean add with infinite patterns!",
         percent:100,
-        state:"error"
+        state:"error",
+        functionId
       });
       throw new Error('do not use boolean add with infinite patterns! cut part of them with intersect first!');
     }
@@ -229,7 +246,8 @@ BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cub
         method:"booleanAdd",
         message:"cubes have different profile!",
         percent:100,
-        state:"error"
+        state:"error",
+        functionId
       });
       throw new Error('cubes have different profile!');
     }
@@ -256,7 +274,8 @@ BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cub
               method:'booleanAdd',
               message:"combining (boolean add)...",
               percent:processed/percent,
-              state:"pending"
+              state:"pending",
+              functionId
             });
           }
           let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
@@ -277,13 +296,15 @@ BinaryVoxelCube.prototype.booleanAdd = function(bvc){ //another binary voxel cub
       method:'booleanAdd',
       message:"boolean add finished",
       percent:100,
-      state:"end"
+      state:"end",
+      functionId
     });
     resolve(new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData,boundingBox,this.channel));
   });
 }
 
 BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary voxel cube
+  const functionId=this.channel.generateId();
   let percent;
   let processed;
 
@@ -291,7 +312,8 @@ BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary vox
     method:'booleanIntersect',
     message:"boolean intersect start",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
   return new Promise((resolve,reject)=>{
     if(bvc.type=='BinaryVoxelPattern'){
@@ -308,7 +330,8 @@ BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary vox
                 method:'booleanIntersect',
                 message:"combining (boolean intersect)...",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
@@ -320,7 +343,8 @@ BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary vox
         method:'booleanIntersect',
         message:"boolean intersect finished",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
       resolve(new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,combinedData,this.boundingBox,this.channel));
     } else {
@@ -329,7 +353,8 @@ BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary vox
           method:'booleanIntersect',
           message:"cubes have different profile!",
           percent:100,
-          state:"error"
+          state:"error",
+          functionId
         });
         reject(new Error('cubes have different profile!'));
       }
@@ -356,7 +381,8 @@ BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary vox
                 method:'booleanIntersect',
                 message:"combining (boolean add)...",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
@@ -372,7 +398,8 @@ BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary vox
         method:'booleanIntersect',
         message:"boolean intersect finished",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
       resolve(new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData,boundingBox,this.channel));
     }
@@ -380,6 +407,7 @@ BinaryVoxelCube.prototype.booleanIntersect = function(bvc){ //another binary vox
 }
 
 BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary voxel cube
+  const functionId=this.channel.generateId();
   let percent;
   let processed;
 
@@ -387,7 +415,8 @@ BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary vo
     method:'booleanDifference',
     message:"boolean difference start",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
   return new Promise((resolve,reject)=>{
     if(bvc.type=='BinaryVoxelPattern'){ //this hack allows to use patterns, it is even much simpler than standard case
@@ -403,7 +432,8 @@ BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary vo
                 method:'booleanDifference',
                 message:"combining (boolean difference)...",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
@@ -419,7 +449,8 @@ BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary vo
           method:'booleanDifference',
           message:"cubes have different profile!",
           percent:100,
-          state:"error"
+          state:"error",
+          functionId
         });
         reject(new Error('cubes have different profile!'));
       }
@@ -439,7 +470,8 @@ BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary vo
                 method:'booleanDifference',
                 message:"combining (boolean difference)...",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             let idx=z*this.sizeX*this.sizeY+y*this.sizeX+x;
@@ -463,7 +495,8 @@ BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary vo
         method:'booleanDifference',
         message:"boolean difference finished",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
 
       resolve(new BinaryVoxelCube(this.sizeX,this.sizeY,(originalIsTaller?this:bvc).sizeZ,combinedData,boundingBox,this.channel));
@@ -472,32 +505,40 @@ BinaryVoxelCube.prototype.booleanDifference = function(bvc){ //another binary vo
 }
 
 BinaryVoxelCube.prototype.booleanInversion = function(){
+  const functionId=this.channel.generateId();
   return new Promise((resolve,reject)=>{
     this.channel.emit("progress",{
       method:'booleanInversion',
       message:"boolean inversion does not show progress, be patient",
       percent:10,
-      state:"start"
+      state:"start",
+      functionId
     });
     const ret=new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData.not(),this.boundingBox,this.channel);
     this.channel.emit("progress",{
       method:'booleanInversion',
       message:"boolean inversion finished",
       percent:100,
-      state:"end"
+      state:"end",
+      functionId
     });
     resolve(ret);
   });
 }
 
 BinaryVoxelCube.prototype.translate = function(dx,dy,dz){
+  const functionId=this.channel.generateId();
   this.channel.emit("progress",{
     method:'translate',
     message:"translate start",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
   return new Promise((resolve,reject)=>{
+    if(dx==0 && dy==0 && dz==0){
+      resolve(new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData,this.boundingBox,this.channel));
+    }
     const percent=Math.round((this.boundingBox.right-this.boundingBox.left+1)*(this.boundingBox.back-this.boundingBox.front+1)*(this.boundingBox.top-this.boundingBox.bottom+1)/100);
     let processed=0;
     new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,new bitArray(this.sizeX*this.sizeY*this.sizeZ),this.boundingBox,this.channel).then(ret=>{
@@ -510,7 +551,8 @@ BinaryVoxelCube.prototype.translate = function(dx,dy,dz){
                 method:'translate',
                 message:"translating...",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             ret.setVoxel(x+dx,y+dy,z+dz,this.getVoxel(x,y,z));
@@ -529,7 +571,8 @@ BinaryVoxelCube.prototype.translate = function(dx,dy,dz){
         method:'translate',
         message:"translation finished",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
       resolve(ret);
     });
@@ -537,12 +580,14 @@ BinaryVoxelCube.prototype.translate = function(dx,dy,dz){
 }
 
 BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
+  const functionId=this.channel.generateId();
   const channel=this.channel;
   channel.emit("progress",{
     method:'erode',
     message:"erosion starts...",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
   return new Promise((resolveAll, reject)=>{
     new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ, this.voxelData.copy(),this.boundingBox, this.channel).then((work)=>{
@@ -553,7 +598,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
               method:'erode',
               message:"scaling down...",
               percent:10,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             resolve(obj.scaleDown(smooth));
           });
@@ -595,7 +641,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
               method:'erode',
               message:"cycles...",
               percent:Math.round(i/r*80)+10,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             let percent=Math.round((this.boundingBox.right-this.boundingBox.left+1)*(this.boundingBox.back-this.boundingBox.front+1)*(this.boundingBox.top-this.boundingBox.bottom+1)/100);
             //let percent=1000;
@@ -604,7 +651,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
               method:'erodeCycle',
               message:"erode cycle no."+(i+1),
               percent:0,
-              state:"start"
+              state:"start",
+              functionId
             });
             for(let z=scaledWork.boundingBox.bottom;z<=scaledWork.boundingBox.top;z++){
               for(let y=scaledWork.boundingBox.front;y<=scaledWork.boundingBox.back;y++){
@@ -615,7 +663,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
                       method:'erodeCycle',
                       message:"erode cycle no."+(i+1),
                       percent:processed/percent,
-                      state:"pending"
+                      state:"pending",
+                      functionId
                     });
                   }
                   ret.setVoxel(x,y,z,isInside(scaledWork,x,y,z));
@@ -626,7 +675,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
               method:'erodeCycle',
               message:"erode cycle no."+(i+1),
               percent:100,
-              state:"end"
+              state:"end",
+              functionId
             });
             scaledWork.voxelData=ret.voxelData;
             //scaledWork.refreshBoundingBox();
@@ -636,7 +686,6 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
           function applyScaleUp(pro){
             return new Promise((resolve,reject)=>{
               pro.then((obj)=>{
-                console.log("scale up cycle"+obj.volume());
                 resolve(obj.scaleUp(smooth));
               });
             });
@@ -652,7 +701,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
               method:'erode',
               message:"scaling up...",
               percent:90,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             scaled=applyScaleUp(scaled);
           }
@@ -662,7 +712,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
               method:'erode',
               message:"erode finished...",
               percent:100,
-              state:"end"
+              state:"end",
+              functionId
             });
             resolveAll(scaledUp);
           });
@@ -675,12 +726,14 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
 
 
 BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0, smooth=false){
+  const functionId=this.channel.generateId();
   const channel=this.channel;
   channel.emit("progress",{
     method:'erode',
     message:"erosion starts...",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
   return new Promise((resolveAll, reject)=>{
     new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ, this.voxelData.copy(),this.boundingBox, this.channel).then((work)=>{
@@ -691,7 +744,8 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
               method:'erode',
               message:"scaling down...",
               percent:10,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             resolve(obj.scaleDown(smooth));
           });
@@ -747,13 +801,15 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
               method:'erode',
               message:"cycles...",
               percent:Math.round(((cycleCounter-1)/cycles)*80)+10,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             channel.emit("progress",{
               method:'erodeCycle',
               message:"Startin cycle no."+cycleCounter+" in "+direction+"-axis",
               percent:10,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             let percent=Math.round((scaledWork.boundingBox.right-scaledWork.boundingBox.left+1)*(scaledWork.boundingBox.back-scaledWork.boundingBox.front+1)*(scaledWork.boundingBox.top-scaledWork.boundingBox.bottom+1)/100);
             //let percent=1000;
@@ -762,7 +818,8 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
               method:'erodeCycle',
               message:"erode cycle no."+cycleCounter+"/"+cycles,
               percent:0,
-              state:"start"
+              state:"start",
+              functionId
             });
             for(let z=scaledWork.boundingBox.bottom;z<=scaledWork.boundingBox.top;z++){
               for(let y=scaledWork.boundingBox.front;y<=scaledWork.boundingBox.back;y++){
@@ -773,10 +830,10 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
                       method:'erodeCycle',
                       message:"erode cycle no."+cycleCounter+"/"+cycles,
                       percent:processed/percent,
-                      state:"pending"
+                      state:"pending",
+                      functionId
                     });
                   }
-                  //console.log('x:'+x+'y:'+y+'z:'+z);
                   ret.setVoxel(x,y,z,isInside(scaledWork,x,y,z,direction));
                 }
               }
@@ -785,7 +842,8 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
               method:'erodeCycle',
               message:"erode cycle no."+cycleCounter,
               percent:100,
-              state:"end"
+              state:"end",
+              functionId
             });
             scaledWork.voxelData=ret.voxelData;
             //scaledWork.refreshBoundingBox();
@@ -795,7 +853,6 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
           function applyScaleUp(pro){
             return new Promise((resolve,reject)=>{
               pro.then((obj)=>{
-                console.log("scale up cycle"+obj.volume());
                 resolve(obj.scaleUp(smooth));
               });
             });
@@ -811,7 +868,8 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
               method:'erode',
               message:"scaling up...",
               percent:90,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             scaled=applyScaleUp(scaled);
           }
@@ -821,7 +879,8 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
               method:'erode',
               message:"erode finished...",
               percent:100,
-              state:"end"
+              state:"end",
+              functionId
             });
             resolveAll(scaledUp);
           });
@@ -832,6 +891,7 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
 }
 
 BinaryVoxelCube.prototype.scaleDown = function(smooth=false){
+  const functionId=this.channel.generateId();
   return new Promise((resolve,reject)=>{
     const percent=Math.round((this.boundingBox.right-this.boundingBox.left+1)*(this.boundingBox.back-this.boundingBox.front+1)*(this.boundingBox.top-this.boundingBox.bottom+1)/800);
     let processed=0;
@@ -853,7 +913,8 @@ BinaryVoxelCube.prototype.scaleDown = function(smooth=false){
         method:'scaleDown',
         message:"scale down start",
         percent:0,
-        state:"start"
+        state:"start",
+        functionId
       });
       for(let z=this.boundingBox.bottom;z<=this.boundingBox.top;z+=2){
         for(let y=this.boundingBox.front;y<=this.boundingBox.back;y+=2){
@@ -864,7 +925,8 @@ BinaryVoxelCube.prototype.scaleDown = function(smooth=false){
                 method:'scaleDown',
                 message:"scaling down...",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             let val;
@@ -897,7 +959,8 @@ BinaryVoxelCube.prototype.scaleDown = function(smooth=false){
         method:'scaleDown',
         message:"scaling down finished",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
       resolve(ret);
     });
@@ -905,6 +968,7 @@ BinaryVoxelCube.prototype.scaleDown = function(smooth=false){
 }
 
 BinaryVoxelCube.prototype.scaleUp = function(smooth=false,additive=true){
+  const functionId=this.channel.generateId();
   return new Promise((resolve,reject)=>{
     const percent=Math.round((this.boundingBox.right-this.boundingBox.left+1)*(this.boundingBox.back-this.boundingBox.front+1)*(this.boundingBox.top-this.boundingBox.bottom+1)/100);
     let processed=0;
@@ -983,7 +1047,8 @@ BinaryVoxelCube.prototype.scaleUp = function(smooth=false,additive=true){
         method:'scaleUp',
         message:"scale up start",
         percent:0,
-        state:"start"
+        state:"start",
+        functionId
       });
       for(let z=this.boundingBox.bottom;z<=this.boundingBox.top;z++){
         for(let y=this.boundingBox.front;y<=this.boundingBox.back;y++){
@@ -994,7 +1059,8 @@ BinaryVoxelCube.prototype.scaleUp = function(smooth=false,additive=true){
                 method:'scaleUp',
                 message:"scaling up...",
                 percent:processed/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
             let val=this.getVoxel(x,y,z);
@@ -1013,7 +1079,8 @@ BinaryVoxelCube.prototype.scaleUp = function(smooth=false,additive=true){
         method:'scaleUp',
         message:"scaling up finished",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
       resolve(ret);
     })
@@ -1021,18 +1088,17 @@ BinaryVoxelCube.prototype.scaleUp = function(smooth=false,additive=true){
 }
 
 BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
+  const functionId=this.channel.generateId();
   const channel=this.channel;
   channel.emit("progress",{
     method:'dilate',
     message:"dilate starts...",
     percent:0,
-    state:"start"
+    state:"start",
+    functionId
   });
-  console.log("before promise",this.boundingBox);
   return new Promise((resolveAll, reject)=>{
-    console.log("inside promise");
     new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ, this.voxelData.copy(),this.boundingBox, this.channel).then((work)=>{
-      console.log("new instance", work.volume());
       function applyScaleDown(pro){
         return new Promise((resolve,reject)=>{
           pro.then((obj)=>{
@@ -1040,9 +1106,9 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
               method:'erode',
               message:"scaling down...",
               percent:10,
-              state:"pending"
+              state:"pending",
+              functionId
             });
-            console.log("scale down cycle"+obj.volume());
             resolve(obj.scaleDown(smooth));
           });
         });
@@ -1058,7 +1124,6 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
       }
 
       scaled.then((scaledWork)=>{
-        console.log("eroding",scaledWork.volume());
         let bigerBox={
           left:Math.max(0,scaledWork.boundingBox.left-r),
           right:Math.min(scaledWork.sizeX,scaledWork.boundingBox.right+r),
@@ -1089,7 +1154,8 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
               method:'dilate',
               message:"cycles...",
               percent:Math.round(i/r*80)+10,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             let percent=Math.round((this.boundingBox.right-this.boundingBox.left+1)*(this.boundingBox.back-this.boundingBox.front+1)*(this.boundingBox.top-this.boundingBox.bottom+1)/100);
             //let percent=1000;
@@ -1098,7 +1164,8 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
               method:'dilateCycle',
               message:"dilate cycle no."+(i+1),
               percent:0,
-              state:"start"
+              state:"start",
+              functionId
             });
             for(let z=bigerBox.bottom;z<=bigerBox.top;z++){
               for(let y=bigerBox.front;y<=scaledWork.boundingBox.back;y++){
@@ -1109,7 +1176,8 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
                       method:'dilateCycle',
                       message:"dilate cycle no."+(i+1),
                       percent:processed/percent,
-                      state:"pending"
+                      state:"pending",
+                      functionId
                     });
                   }
                   ret.setVoxel(x,y,z,hasNeighbor(scaledWork,x,y,z));
@@ -1120,7 +1188,8 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
               method:'dilateCycle',
               message:"dilate cycle no."+(i+1),
               percent:100,
-              state:"end"
+              state:"end",
+              functionId
             });
             scaledWork.voxelData=ret.voxelData;
             //scaledWork.refreshBoundingBox();
@@ -1130,7 +1199,6 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
           function applyScaleUp(pro){
             return new Promise((resolve,reject)=>{
               pro.then((obj)=>{
-                console.log("scale up cycle"+obj.volume());
                 resolve(obj.scaleUp(smooth));
               });
             });
@@ -1146,7 +1214,8 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
               method:'dilate',
               message:"scaling up...",
               percent:90,
-              state:"pending"
+              state:"pending",
+              functionId
             });
             scaled=applyScaleUp(scaled);
           }
@@ -1156,7 +1225,8 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
               method:'dilate',
               message:"dilate finished...",
               percent:100,
-              state:"end"
+              state:"end",
+              functionId
             });
             resolveAll(scaledUp);
           });
@@ -1167,13 +1237,20 @@ BinaryVoxelCube.prototype.dilate = function(r=1, scale=0, smooth=false){
 }
 
 BinaryVoxelCube.prototype.changeZ = function(change,relative=true){
+  const functionId=this.channel.generateId();
   return new Promise((resolve,reject)=>{
+    if(relative && change===0){
+      //shortcut for zero change used in projections
+      resolve(new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData,this.boundingBox,this.channel));
+      return;
+    }
     const finalZ=relative?(this.sizeZ+change):change;
     this.channel.emit("progress",{
       method:'changeZ',
       message:"new height is "+finalZ,
       percent:0,
-      state:"start"
+      state:"start",
+      functionId
     });
     let counter=0;
     const percent=Math.round((Math.min(finalZ+1,this.boundingBox.top)-this.boundingBox.bottom)*(this.boundingBox.back-this.boundingBox.front)*(this.boundingBox.right-this.boundingBox.left)/100);
@@ -1188,7 +1265,8 @@ BinaryVoxelCube.prototype.changeZ = function(change,relative=true){
                 method:'changeZ',
                 message:"changeZ in progress...",
                 percent:counter/percent,
-                state:"pending"
+                state:"pending",
+                functionId
               });
             }
           }
@@ -1198,7 +1276,8 @@ BinaryVoxelCube.prototype.changeZ = function(change,relative=true){
         method:'changeZ',
         message:"changeZ fnished...",
         percent:100,
-        state:"end"
+        state:"end",
+        functionId
       });
       ret.refreshBoundingBox().then(()=>{
         resolve(ret);
@@ -1209,27 +1288,30 @@ BinaryVoxelCube.prototype.changeZ = function(change,relative=true){
 
 //map is a array (on numbers 0-255), must have same dimensions as layer
 BinaryVoxelCube.prototype.verticalMap = function(map, maxZ=10, minZ=0,inBox=true){
+  const functionId=this.channel.generateId();
   return new Promise((resolve,reject)=>{
     this.channel.emit("progress",{
       method:'verticalMap',
       message:"vertical mapping started...",
       percent:0,
-      state:"start"
+      state:"start",
+      functionId
     });
     new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData.copy(),boundingBox=this.boundingBox,this.channel).then(ret=>{
       this.channel.emit("progress",{
         method:'verticalMap',
         message:"voxel cube created...",
         percent:0,
-        state:"pendng"
+        state:"pending",
+        functionId
       });
-      console.log(ret);
       ret.changeZ(maxZ).then(ret=>{
         this.channel.emit("progress",{
           method:'verticalMap',
           message:"size increased...",
           percent:0,
-          state:"pendng"
+          state:"pending",
+          functionId
         });
 
         const midpoint=(255/(maxZ-minZ))*((maxZ-minZ)/2+minZ);
@@ -1270,7 +1352,8 @@ BinaryVoxelCube.prototype.verticalMap = function(map, maxZ=10, minZ=0,inBox=true
                 inBox,
                 position:[x,y],
                 percent:counter/percent,
-                state:"pendng"
+                state:"pending",
+                functionId
               });
             }
           }
@@ -1279,12 +1362,440 @@ BinaryVoxelCube.prototype.verticalMap = function(map, maxZ=10, minZ=0,inBox=true
           method:'verticalMap',
           message:"vertical map applied...",
           percent:100,
-          state:"end"
+          state:"end",
+          functionId
         });
         resolve(ret);
       });
     });
   });
 }
+
+BinaryVoxelCube.prototype.projection=function(direction="topBottom"){
+  const functionId=this.channel.generateId();
+  return new Promise((resolve,reject)=>{
+    let imageArray,width,height,minW,maxW,minH,maxH,minD,maxD,invert,depth;
+    if(direction=="topBottom" || direction=="bottomTop"){
+      width=this.sizeX;
+      minW=this.boundingBox.left;
+      maxW=this.boundingBox.right;
+      height=this.sizeY;
+      minH=this.boundingBox.front;
+      maxH=this.boundingBox.back;
+      depth=this.sizeZ;
+      minD=this.boundingBox.bottom;
+      maxD=this.boundingBox.top;
+      invert=(direction=="bottomTop");
+      this.channel.emit("progress",{
+        method:'projection',
+        message:"started projection in direction "+direction,
+        direction,
+        percent:0,
+        state:"start",
+        functionId
+      });
+      imageArray=[].fill(0,0,width*height);
+      const percent=Math.round((maxW-minW)*(maxH-minH)/100);
+      let counter=0;
+      for(let h=minH;h<=maxH;h++){
+        for(let w=minW;w<=maxW;w++){
+          counter++;
+          if(!counter%percent){
+            this.channel.emit("progress",{
+              method:'projection',
+              message:"generating projection in direction "+direction,
+              direction,
+              percent:counter/percent,
+              state:"pending",
+              functionId
+            });
+          }
+
+          if(invert){
+            for(let d=0;d<depth;d++){
+              if(this.getVoxel(w,h,d)){
+                imageArray[width*h+w]=d;
+                break;
+              }
+            }
+          } else {
+            for(let d=depth-1;d>=0;d--){
+              if(this.getVoxel(w,h,d)){
+                imageArray[width*h+(width-w)]=d;
+                break;
+              }
+            }
+          }
+        }
+      }
+    } else if(direction=="leftRight" || direction=="rightLeft"){
+      width=this.sizeY;
+      minW=this.boundingBox.front;
+      maxW=this.boundingBox.back;
+      height=this.sizeZ;
+      minH=this.boundingBox.bottom;
+      maxH=this.boundingBox.top;
+      depth=this.sizeX;
+      minD=this.boundingBox.left;
+      maxD=this.boundingBox.right;
+      invert=(direction=="rightLeft");
+      this.channel.emit("progress",{
+        method:'projection',
+        message:"started projection in direction "+direction,
+        direction,
+        percent:0,
+        state:"start",
+        functionId
+      });
+      imageArray=[].fill(0,0,width*height);
+      const percent=Math.round((maxW-minW)*(maxH-minH)/100);
+      let counter=0;
+      for(let h=minH;h<=maxH;h++){
+        for(let w=minW;w<=maxW;w++){
+          counter++;
+          if(!counter%percent){
+            this.channel.emit("progress",{
+              method:'projection',
+              message:"generating projection in direction "+direction,
+              direction,
+              percent:counter/percent,
+              state:"pending",
+              functionId
+            });
+          }
+          if(invert){
+            for(let d=0;d<depth;d++){
+              if(this.getVoxel(d,w,h)){
+                imageArray[width*(height-h)+(width-w)]=d;
+                break;
+              }
+            }
+          } else {
+            for(let d=depth-1;d>=0;d--){
+              if(this.getVoxel(d,w,h)){
+                imageArray[width*(height-h)+w]=d;
+                break;
+              }
+            }
+          }
+        }
+      }
+    } else if(direction=="frontBack" || direction=="backFront"){
+      width=this.sizeX;
+      minW=this.boundingBox.left;
+      maxW=this.boundingBox.right;
+      height=this.sizeZ;
+      minH=this.boundingBox.bottom;
+      maxH=this.boundingBox.top;
+      depth=this.sizeY;
+      minD=this.boundingBox.front;
+      maxD=this.boundingBox.back;
+      invert=(direction=="backFront");
+      this.channel.emit("progress",{
+        method:'projection',
+        message:"started projection in direction "+direction,
+        direction,
+        percent:0,
+        state:"start",
+        functionId
+      });
+      imageArray=[].fill(0,0,width*height);
+      const percent=Math.round((maxW-minW)*(maxH-minH)/100);
+      let counter=0;
+      for(let h=minH;h<=maxH;h++){
+        for(let w=minW;w<=maxW;w++){
+          counter++;
+          if(!counter%percent){
+            this.channel.emit("progress",{
+              method:'projection',
+              message:"generating projection in direction "+direction,
+              direction,
+              percent:counter/percent,
+              state:"pending",
+              functionId
+            });
+          }
+          if(invert){
+            for(let d=0;d<depth;(d++)){
+              if(this.getVoxel(w,d,h)){
+                imageArray[width*(height-h)+w]=d;
+                break;
+              }
+            }
+          } else {
+            for(let d=depth-1;d>=0;d--){
+              if(this.getVoxel(w,d,h)){
+                imageArray[width*(height-h)+(width-w)]=d;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    let coef=255/(maxD-minD);
+    let diff=minD;
+    for(let i=0;i<imageArray.length;i++){
+      imageArray[i]=invert?255-imageArray[i]*coef+diff:imageArray[i]*coef+diff;
+    }
+    this.channel.emit("progress",{
+      method:'projection',
+      message:"projection generated",
+      direction,
+      percent:100,
+      state:"end",
+      functionId
+    });
+    resolve({
+      imageArray,
+      width,
+      height
+    });
+  });
+}
+
+BinaryVoxelCube.prototype.projectionMap = function(map, maxC=10, minC=0,direction="topBottom",inBox=true){
+  const functionId=this.channel.generateId();
+  return new Promise((resolve,reject)=>{
+    this.channel.emit("progress",{
+      method:'projectionMap',
+      message:"projection mapping started...",
+      direction,
+      percent:0,
+      state:"start",
+      functionId
+    });
+    new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData.copy(),boundingBox=this.boundingBox,this.channel).then(ret=>{
+      this.channel.emit("progress",{
+        method:'projectionMap',
+        message:"voxel cube created...",
+        direction,
+        percent:0,
+        state:"pending",
+        functionId
+      });
+      ret.changeZ((direction=="topBottom" || direction=="bottomTop")?maxC:0).then(ret=>{
+        ret.translate(0,0,(direction=="bottomTop")?maxC:0).then(ret => {
+          this.channel.emit("progress",{
+            method:'projectionMap',
+            message:"size increased...",
+            direction,
+            percent:0,
+            state:"pending",
+            functionId
+          });
+
+          const midpoint=(255/(maxC-minC))*((maxC-minC)/2+minC);
+
+          let percent;
+          let counter=0;
+          let minWid,maxWid,minHid,maxHid,minDid,maxDid;
+          if(direction=="topBottom" || direction=="bottomTop"){
+            minW=this.boundingBox.left;
+            maxW=this.boundingBox.right;
+            minH=this.boundingBox.front;
+            maxH=this.boundingBox.back;
+            minD=this.boundingBox.bottom;
+            maxD=this.boundingBox.top;
+            sizeW=this.sizeX;
+            sizeH=this.sizeY;
+            sizeD=this.sizeZ;
+            inverse=direction=="bottomTop";
+          } else if (direction=="leftRight" || direction=="rightLeft"){
+            minW=this.boundingBox.front;
+            maxW=this.boundingBox.back;
+            minH=this.boundingBox.bottom;
+            maxH=this.boundingBox.top;
+            minD=this.boundingBox.left;
+            maxD=this.boundingBox.right;
+            sizeW=this.sizeY;
+            sizeH=this.sizeZ;
+            sizeD=this.sizeX;
+            inverse=direction=="rightLeft";
+          } else if (direction=="frontBack" || direction=="backFront"){
+            minW=this.boundingBox.left;
+            maxW=this.boundingBox.right;
+            minH=this.boundingBox.bottom;
+            maxH=this.boundingBox.top;
+            minD=this.boundingBox.front;
+            maxD=this.boundingBox.back;
+            sizeW=this.sizeX;
+            sizeH=this.sizeZ;
+            sizeD=this.sizeY;
+            inverse=direction=="backFront";
+          }
+          if(inBox){
+            percent=Math.round((maxW-minW)*(maxH-minH)/100);
+          } else {
+            percent=Math.round(sizeW*sizeH/100);
+          }
+          const factor=(maxC-minC);
+          for(let h=inBox?minH:0;h<(inBox?(maxH+1):sizeH);h++){
+            for(let w=inBox?minW:0;w<(inBox?(maxW+1):sizeW);w++){
+              counter++;
+              let thickness=Math.round(map[h*sizeW+w]/255*factor)+minC;
+              let d=inverse?(inBox?minD:0):(inBox?maxD:sizeD-1);
+              //this criterion is really hard so i am breaking it down
+              function shouldContinue(){
+                let cont=true;
+                if(direction=="topBottom"){
+                  cont=!ret.getVoxel(w,h,d)&&d>0;
+                } else if(direction=="bottomTop"){
+                  cont=!ret.getVoxel(w,h,d)&&d<sizeD;
+                } else if(direction=="leftRight"){
+                  cont=!ret.getVoxel(d,w,h)&&d>0;
+                } else if(direction=="rightLeft"){
+                  cont=!ret.getVoxel(d,w,h)&&d<sizeD;
+                } else if(direction=="frontBack"){
+                  cont=!ret.getVoxel(w,d,h)&&d>0;
+                } else if(direction=="backFront"){
+                  cont=!ret.getVoxel(w,d,h)&&d<sizeD;
+                }
+                return cont;
+              }
+
+              while(shouldContinue()){
+                if(inverse){
+                  d++;
+                } else {
+                  d--
+                }
+              }
+              if(thickness>0){
+                for(let i=0;i<thickness;i++){
+                  if(direction=="topBottom" || direction=="bottomTop"){
+                    ret.setVoxel(inverse?w:(sizeW-w),h,inverse?(d-i):(d+i),true);
+                  } else if(direction=="leftRight" || direction=="rightLeft"){
+                    ret.setVoxel(inverse?(d-i):(d+i),inverse?w:(sizeW-w),(sizeH-h),true);
+                  } else if(direction=="frontBack" || direction=="backFront"){
+                    ret.setVoxel(inverse?w:(sizeW-w),inverse?(d-i):(d+i),(sizeH-h),true);
+                  }
+                }
+              } else if(thickness<0){
+                for(let i=0;i>thickness;i--){
+                  if(direction=="topBottom" || direction=="bottomTop"){
+                    if(d+i>0 && d+i<sizeD-1){
+                      ret.setVoxel((sizeW-w),h,inverse?(d-i):(d+i),false);
+                    }
+                  } else if(direction=="leftRight" || direction=="rightLeft"){
+                    if(d+i>0 && d+i<sizeD-1){
+                      ret.setVoxel(inverse?(d+i):(d-i),inverse?w:(sizeW-w),(sizeH-h),false);
+                    }
+                  } else if(direction=="frontBack" || direction=="backFront"){
+                    if(d+i>0 && d+i<sizeD-1){
+                      ret.setVoxel(w,inverse?(d-i):(d+i),h,false);
+                    }
+                  }
+                }
+              }
+
+              if(!(counter%percent)){
+                this.channel.emit("progress",{
+                  x:w,
+                  y:h,
+                  inverse,
+                  method:'projectionMap',
+                  message:"applying map projection...",
+                  direction,
+                  inBox,
+                  percent:counter/percent,
+                  state:"pending",
+                  functionId
+                });
+              }
+            }
+          }
+          this.channel.emit("progress",{
+            method:'projectionMap',
+            message:"projection map applied...",
+            direction,
+            percent:100,
+            state:"end",
+            functionId
+          });
+          resolve(ret);
+        });
+      });
+    });
+  });
+}
+
+BinaryVoxelCube.prototype.rotate = function(rotations=2, clockwise=true){
+  const functionId=this.channel.generateId();
+  return new Promise((resolve,reject)=>{
+    rotations=rotations%4;
+    if(rotations==0){
+      resolve(new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,this.voxelData,this.boundingBox,this.channel));
+      return;
+    } else if(rotations==2){
+      this.channel.emit("progress",{
+        method:'rotate',
+        message:"rotating 180 degrees...",
+        percent:0,
+        state:"start",
+        functionId
+      });
+      new BinaryVoxelCube(this.sizeX,this.sizeY,this.sizeZ,new bitArray(this.sizeX*this.sizeY*this.sizeZ),this.boundingBox,this.channel).then(ret=>{
+        const percent=Math.round((ret.boundingBox.right-ret.boundingBox.left)*(ret.boundingBox.back-ret.boundingBox.front)*(ret.boundingBox.top-ret.boundingBox.bottom)/100);
+        // console.log("rotating",(ret.boundingBox.right-ret.boundingBox.left)*(ret.boundingBox.back-ret.boundingBox.front)*(ret.boundingBox.top-ret.boundingBox.bottom));
+        // return;
+        let counter=0;
+        ret.boundingBox={
+          left:this.sizeX-this.boundingBox.left-1,
+          right:this.sizeX-this.boundingBox.right-1,
+          front:this.sizeY-this.boundingBox.front-1,
+          back:this.sizeY-this.boundingBox.back-1,
+          bottom:this.boundingBox.bottom,
+          top:this.boundingBox.top
+        }
+        for(let z=this.boundingBox.bottom;z<=this.boundingBox.top;z++){
+          for(let y=this.boundingBox.front;y<=this.boundingBox.back;y++){
+            for(let x=this.boundingBox.left;x<=this.boundingBox.right;x++){
+              ret.setVoxel((this.sizeX-x-1),(this.sizeY-y-1),z,this.getVoxel(x,y,z));
+              counter++;
+              if(!(counter%percent)){
+                this.channel.emit("progress",{
+                  x,
+                  y,
+                  minusX:(this.sizeX-x-1),
+                  minusY:(this.sizeY-y-1),
+                  method:'rotate',
+                  message:"rotating 180 degrees...",
+                  percent:counter/percent,
+                  state:"pending",
+                  functionId
+                });
+              }
+            }
+          }
+        }
+
+        ret.refreshBoundingBox().then(()=>{
+          this.channel.emit("progress",{
+            method:'rotate',
+            message:"rotating 180 degrees...",
+            bb:ret.boundingBox,
+            retVol:ret.volume(),
+            oriVol:ret.volume(),
+            percent:100,
+            state:"end",
+            functionId
+          });
+
+          resolve(ret);
+          return;
+        });
+        return;
+      });
+      return;
+    } else {
+      if(!clockwise){
+        rotations=(rotations+2)%4;
+      }
+      reject(new Error('not implemented'));
+    }
+  });
+}
+
 
 module.exports = BinaryVoxelCube;
