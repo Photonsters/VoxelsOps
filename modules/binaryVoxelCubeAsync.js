@@ -723,9 +723,8 @@ BinaryVoxelCube.prototype.erode = function(r=1,scale=0, smooth=false){
   });
 }
 
-
-
-BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0, smooth=false){
+BinaryVoxelCube.prototype.erodeDirectional = function(rx=0,ry=0,rz=0,scale=0, smooth=false){
+  let r=Math.max(rx,ry,rz);
   const functionId=this.channel.generateId();
   const channel=this.channel;
   channel.emit("progress",{
@@ -763,60 +762,39 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
 
       scaled.then((scaledWork)=>{
         new BinaryVoxelCube(scaledWork.sizeX,scaledWork.sizeY,scaledWork.sizeZ, new bitArray(scaledWork.sizeX*scaledWork.sizeY*scaledWork.sizeZ),scaledWork.boundingBox,channel).then((ret)=>{
-          function isInside(obj,x,y,z,direction){
+          function isInside(obj,x,y,z,cycle){
             if(!obj.getVoxel(x,y,z)){
               return false;
             }
-            if(!obj.getVoxel(x-1,y,z) && direction=='x'){
+            if(rx>cycle && !obj.getVoxel(x-1,y,z)){
               return false;
-            } else if(!obj.getVoxel(x+1,y,z) && direction=='x'){
+            } else if(rx>cycle && !obj.getVoxel(x+1,y,z)){
               return false;
-            } else if(!obj.getVoxel(x,y-1,z) && direction=='y'){
+            } else if(ry>cycle && !obj.getVoxel(x,y-1,z)){
               return false;
-            } else if(!obj.getVoxel(x,y+1,z) && direction=='y'){
+            } else if(ry>cycle && !obj.getVoxel(x,y+1,z)){
               return false;
-            } else if(!obj.getVoxel(x,y,z-1) && direction=='z'){
+            } else if(rz>cycle && !obj.getVoxel(x,y,z-1)){
               return false;
-            } else if(!obj.getVoxel(x,y,z+1) && direction=='z'){
+            } else if(rz>cycle && !obj.getVoxel(x,y,z+1)){
               return false;
             }
             return true;
           }
-          r.x=parseInt(r.x);
-          r.y=parseInt(r.y);
-          r.z=parseInt(r.z);
-
-          const cycles=r.x+r.y+r.z;
-          let cycleCounter=0;
-          while(r.x+r.y+r.z>0){
-            cycleCounter++;
-            let direction='x';
-            for(idx in r){
-              if(r[idx]>r[direction]){
-                direction=idx;
-              }
-            }
-            r[direction]--;
+          for(let i=0;i<r;i++){
             channel.emit("progress",{
               method:'erode',
               message:"cycles...",
-              percent:Math.round(((cycleCounter-1)/cycles)*80)+10,
+              percent:Math.round(i/r*80)+10,
               state:"pending",
               functionId
             });
-            channel.emit("progress",{
-              method:'erodeCycle',
-              message:"Startin cycle no."+cycleCounter+" in "+direction+"-axis",
-              percent:10,
-              state:"pending",
-              functionId
-            });
-            let percent=Math.round((scaledWork.boundingBox.right-scaledWork.boundingBox.left+1)*(scaledWork.boundingBox.back-scaledWork.boundingBox.front+1)*(scaledWork.boundingBox.top-scaledWork.boundingBox.bottom+1)/100);
+            let percent=Math.round((this.boundingBox.right-this.boundingBox.left+1)*(this.boundingBox.back-this.boundingBox.front+1)*(this.boundingBox.top-this.boundingBox.bottom+1)/100);
             //let percent=1000;
             let processed=0;
             channel.emit("progress",{
               method:'erodeCycle',
-              message:"erode cycle no."+cycleCounter+"/"+cycles,
+              message:"erode cycle no."+(i+1),
               percent:0,
               state:"start",
               functionId
@@ -828,19 +806,19 @@ BinaryVoxelCube.prototype.erodeDirectional = function(r={x:1, y:1, z:1},scale=0,
                   if(!(processed%percent)){
                     channel.emit("progress",{
                       method:'erodeCycle',
-                      message:"erode cycle no."+cycleCounter+"/"+cycles,
+                      message:"erode cycle no."+(i+1),
                       percent:processed/percent,
                       state:"pending",
                       functionId
                     });
                   }
-                  ret.setVoxel(x,y,z,isInside(scaledWork,x,y,z,direction));
+                  ret.setVoxel(x,y,z,isInside(scaledWork,x,y,z,i));
                 }
               }
             }
             channel.emit("progress",{
               method:'erodeCycle',
-              message:"erode cycle no."+cycleCounter,
+              message:"erode cycle no."+(i+1),
               percent:100,
               state:"end",
               functionId

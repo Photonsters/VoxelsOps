@@ -53,16 +53,53 @@ parser.addArgument(
   [ '-r', '--radius' ],
   {
     help: 'erosion radius',
-    required: true
+    required: false
+  }
+)
+
+parser.addArgument(
+  [ '-x', '--radiusX' ],
+  {
+    help: 'erosion radius x-axis',
+    required: false
+  }
+)
+
+parser.addArgument(
+  [ '-y', '--radiusY' ],
+  {
+    help: 'erosion radius y-axis',
+    required: false
+  }
+)
+
+parser.addArgument(
+  [ '-z', '--radiusZ' ],
+  {
+    help: 'erosion radius z-axis',
+    required: false
   }
 )
 
 const args = parser.parseArgs();
 
 const r=parseInt(args.radius);
+const x=parseInt(args.radiusX);
+const y=parseInt(args.radiusY);
+const z=parseInt(args.radiusZ);
 
-if (isNaN(r) || r<=0){
+
+
+if (r && isNaN(r) || r<=0){
   throw new Error('Radius must be natural number');
+}
+
+if (!r && !x && !y && !z){
+  throw new Error('Radius any partial radius must be defined');
+}
+
+if(r && (x || y || z)){
+  throw new Error('Do not combine radius with partial erosion');
 }
 
 args.src=path.resolve(args.src)
@@ -75,23 +112,43 @@ fileLoader.async(args.src,commonChannel).then(photonFile=>{
   progressProject();
   new voxelCube(photonFile.header.resX,photonFile.header.resY,photonFile.layers.length,photonFile.voxels,null,commonChannel).then((original)=>{
     progressProject();
-    original.erode(r).then(ret => {
-      progressProject();
-      exportCube(ret,args.dest,commonChannel).then(()=>{
+    if(r){
+      original.erode(r).then(ret => {
         progressProject();
-        commonChannel.emit("progress",{
-          method:'erosionProgress',
-          message:"erosion progress finished",
-          percent:100,
-          state:"end",
-          projectId
+        exportCube(ret,args.dest,commonChannel).then(()=>{
+          progressProject();
+          commonChannel.emit("progress",{
+            method:'erosionProgress',
+            message:"erosion progress finished",
+            percent:100,
+            state:"end",
+            projectId
+          });
+        }).catch(err => {
+          throw new Error(err);
         });
       }).catch(err => {
         throw new Error(err);
       });
-    }).catch(err => {
-      throw new Error(err);
-    });
+    } else {
+      original.erodeDirectional(x||0,y||0,z||0).then(ret => {
+        progressProject();
+        exportCube(ret,args.dest,commonChannel).then(()=>{
+          progressProject();
+          commonChannel.emit("progress",{
+            method:'erosionProgress',
+            message:"erosion progress finished",
+            percent:100,
+            state:"end",
+            projectId
+          });
+        }).catch(err => {
+          throw new Error(err);
+        });
+      }).catch(err => {
+        throw new Error(err);
+      });
+    }
   }).catch(err => {
     throw new Error(err);
   });
