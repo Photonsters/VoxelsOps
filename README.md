@@ -12,3 +12,6 @@ run 'npm i' again
 
 # Gyroid infill generator
 in './app' run 'npm run start' to start application
+
+## Quick How-to video of instalation on Windows
+![voxelopsinstall](https://user-images.githubusercontent.com/11083514/50980437-9837a180-14f0-11e9-9d48-dc84a8306fc7.gif)
