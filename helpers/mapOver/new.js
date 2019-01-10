@@ -14,7 +14,7 @@ var parser = new ArgumentParser({
 });
 
 parser.addArgument(
-  [ '-t', '--texture' ],
+  [ '-s', '--src' ],
   {
     help: 'Location of texture png',
     required: true
@@ -29,14 +29,16 @@ parser.addArgument(
 );
 
 parser.addArgument(
-  [ '-f', '--filter' ],
+  [ '-z', '--height' ],
   {
-    help: 'filter strength in pixels',
+    help: 'objectHeight',
     default: 30
   }
 );
 
-args.texture=path.resolve(args.texture);
+const args = parser.parseArgs();
+
+args.src=path.resolve(args.src);
 
 if(!args.dest){
   args.dest=args.src.replace('.png','.eroded');
@@ -44,12 +46,10 @@ if(!args.dest){
   args.dest=path.resolve(args.dest);
 }
 
-const args = parser.parseArgs();
-
 new voxelCube(1440,2560,0,new bitArray(0),null,commonChannel).then((model)=>{
-    importImages.loadImage(args.texture).then(png=>{
+    importImages.loadImage(args.src).then(png=>{
       importImages.pngToArray(png).then(heightmap=>{
-        model.verticalMap(heightmap,args.filter,0,false).then(ret=>{
+        model.verticalMap(heightmap,args.height,0,false).then(ret=>{
           exportImages(ret,args.dest,commonChannel).then(()=>{
             console.log('done');
           });
