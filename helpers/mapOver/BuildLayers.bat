@@ -21,7 +21,6 @@ IF "%_layer%"=="empty" GOTO Help
 REM If destination is missing use defaults
 IF "%_destination%"=="empty" GOTO SZ
 
-
 :SDZ
 node new.js -s %_source% -d %_destination% -z %_layers%
 GOTO End
