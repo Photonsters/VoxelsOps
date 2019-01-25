@@ -1,6 +1,8 @@
 @ECHO off
 cmd /c 
 
+REM https://github.com/Photonsters/VoxelsOps
+REM ----------------------------------------------------------------------------------
 REM https://www.codeproject.com/Tips/123810/Get-user-input-from-DOS-prompt
 REM http://steve-jansen.github.io/guides/windows-batch-scripting/part-2-variables.html
 REM https://ss64.com/nt/set.html
