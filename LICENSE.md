@@ -1,3 +1,6 @@
+![image](https://user-images.githubusercontent.com/11083514/56258229-bb14bb80-60c6-11e9-88d8-e3ad5d310bd0.png)
+
+----
 This is free and unencumbered software released into the public domain.
 
 Anyone is free to copy, modify, publish, use, compile, sell, or
@@ -28,3 +31,4 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
+
